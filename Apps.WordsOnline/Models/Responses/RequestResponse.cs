@@ -27,8 +27,8 @@ public class RequestResponse
         ProjectGuid = dto.ProjectGuid;
         ProjectId = dto.ProjectId;
         ClientRequestId = dto.ClientRequestId;
-        OrderDate = DateTime.Parse(dto.OrderDate);
-        DueDate = DateTime.Parse(dto.DueDate);
+        OrderDate = string.IsNullOrEmpty(dto.OrderDate) ? DateTime.MinValue : DateTime.Parse(dto.OrderDate);
+        DueDate = string.IsNullOrEmpty(dto.DueDate) ? DateTime.MinValue : DateTime.Parse(dto.DueDate);
     }
     
     [Display("Request ID")]
