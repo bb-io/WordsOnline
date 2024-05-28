@@ -1,3 +1,4 @@
+using Apps.WordsOnline.Api.Dtos;
 using Apps.WordsOnline.Api.Models;
 using Apps.WordsOnline.Constants;
 using Blackbird.Applications.Sdk.Common.Authentication;
@@ -13,9 +14,14 @@ public class ApiClient : RestClient
 {
     public async Task<T> ExecuteWithJson<T>(string endpoint, Method method, object? body,
         IEnumerable<AuthenticationCredentialsProvider> credentials, List<ByteFile>? files = null)
+        where T : ResponseBase
     {
         var response = await Execute(endpoint, method, body, credentials.ToList(), files);
         var result = JsonConvert.DeserializeObject<T>(response.Content!)!;
+        if (result.Status != 0)
+        {
+            throw new($"Status code: {result.Status}, Code: {result.Code}, Message: {result.Message}");
+        }
         
         return result;
     }
