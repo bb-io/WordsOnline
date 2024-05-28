@@ -18,47 +18,51 @@ namespace Apps.WordsOnline.Actions;
 public class Actions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : AppInvocable(invocationContext)
 {
+    private Logger _logger = new();
+    
     [Action("Create request", Description = "Creates a new request based on the provided files")]
     public async Task<RequestResponse> CreateRequest([ActionParameter] CreateRequestRequest request)
     {
-        try
+        var sources = request.SourceFiles.ToList();
+        var references = request.ReferenceFiles?.ToList();
+
+        var files = await UploadFiles(sources, references);
+        await _logger.LogAsync(new
         {
-            var sources = request.SourceFiles.ToList();
-            var references = request.ReferenceFiles?.ToList();
-
-            var files = await UploadFiles(sources, references);
-            var requestDto = new
-            {
-                requestName = request.RequestName,
-                sourceLanguage = request.SourceLanguage,
-                targetLanguages = request.TargetLanguages,
-                contentTypeId = request.ContentType,
-                serviceLevel = request.ServiceLevel,
-                description = request.Description ?? "No description provided",
-                fileList = files.Select(x => new
-                {
-                    guid = x.Guid,
-                    name = x.Name,
-                    type = x.Type
-                }),
-                clientRequestId = request.ClientRequestId ?? "Default ID",
-                isAutoApprove = request.IsAutoApprove.HasValue ? request.IsAutoApprove.Value.ToString() : "True"
-            };
-
-            var response = await Client.ExecuteWithJson<BaseResponseDto<string>>("/requests", Method.Post, requestDto,
-                Creds.ToList());
-
-            var responseDto = await GetRequest(response.Result);
-            return new RequestResponse(responseDto)
-            {
-                RequestId = response.Result
-            };
-        }
-        catch (Exception e)
+            Message = "Files uploaded successfully",
+            Files = files
+        });
+        
+        var requestDto = new
         {
-            throw new Exception($"Got an error while creating a request. Exception: {e.Message}, " +
-                                $"Exception type: {e.GetType()}, StackTrace: {e.StackTrace}, InnerException: {e.InnerException?.Message}");
-        }
+            requestName = request.RequestName,
+            sourceLanguage = request.SourceLanguage,
+            targetLanguages = request.TargetLanguages,
+            contentTypeId = request.ContentType,
+            serviceLevel = request.ServiceLevel,
+            description = request.Description ?? "No description provided",
+            fileList = files.Select(x => new
+            {
+                guid = x.Guid,
+                name = x.Name,
+                type = x.Type
+            }),
+            clientRequestId = request.ClientRequestId ?? "Default ID",
+            isAutoApprove = request.IsAutoApprove.HasValue ? request.IsAutoApprove.Value.ToString() : "True"
+        };
+
+        var response = await Client.ExecuteWithJson<BaseResponseDto<string>>("/requests", Method.Post, requestDto,
+            Creds.ToList());
+        
+        await _logger.LogAsync(new { Message = "Request created successfully", RequestId = response.Result });
+
+        var responseDto = await GetRequest(response.Result);
+        await _logger.LogAsync(new { Message = "Request retrieved successfully", Request = responseDto });
+        
+        return new RequestResponse(responseDto)
+        {
+            RequestId = response.Result
+        };
     }
 
     private async Task<SingleRequestDto> GetRequest(string requestId)
