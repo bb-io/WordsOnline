@@ -1,15 +1,16 @@
+using RestSharp;
 using System.IO.Compression;
 using Apps.WordsOnline.Api.Dtos;
 using Apps.WordsOnline.Api.Models;
 using Apps.WordsOnline.Invocables;
 using Apps.WordsOnline.Models.Requests;
+using Apps.WordsOnline.Models.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
-using RestSharp;
 
 namespace Apps.WordsOnline.Actions;
 
@@ -18,35 +19,56 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
     : AppInvocable(invocationContext)
 {
     [Action("Create request", Description = "Creates a new request based on the provided files")]
-    public async Task<RequestDto> CreateRequest([ActionParameter] CreateRequestRequest request)
+    public async Task<RequestResponse> CreateRequest([ActionParameter] CreateRequestRequest request)
     {
-        var sources = request.SourceFiles.ToList();
-        var references = request.ReferenceFiles?.ToList();
-
-        var files = await UploadFiles(sources, references);
-        var requestDto = new
+        try
         {
-            requestName = request.RequestName,
-            sourceLanguage = request.SourceLanguage,
-            targetLanguages = request.TargetLanguages,
-            contentTypeId = request.ContentType,
-            serviceLevel = request.ServiceLevel,
-            description = request.Description ?? "No description provided",
-            fileList = files.Select(x => new
-            {
-                guid = x.Guid,
-                name = x.Name,
-                type = x.Type
-            }),
-            clientRequestId = request.ClientRequestId ?? "Default ID",
-            isAutoApprove = request.IsAutoApprove.HasValue ? request.IsAutoApprove.Value.ToString() : "True"
-        };
+            var sources = request.SourceFiles.ToList();
+            var references = request.ReferenceFiles?.ToList();
 
-        var response = await Client.ExecuteWithJson<BaseResponseDto<RequestDto>>("/requests", Method.Post, requestDto,
-            Creds.ToList());
-        return response.Result;
+            var files = await UploadFiles(sources, references);
+            var requestDto = new
+            {
+                requestName = request.RequestName,
+                sourceLanguage = request.SourceLanguage,
+                targetLanguages = request.TargetLanguages,
+                contentTypeId = request.ContentType,
+                serviceLevel = request.ServiceLevel,
+                description = request.Description ?? "No description provided",
+                fileList = files.Select(x => new
+                {
+                    guid = x.Guid,
+                    name = x.Name,
+                    type = x.Type
+                }),
+                clientRequestId = request.ClientRequestId ?? "Default ID",
+                isAutoApprove = request.IsAutoApprove.HasValue ? request.IsAutoApprove.Value.ToString() : "True"
+            };
+
+            var response = await Client.ExecuteWithJson<BaseResponseDto<string>>("/requests", Method.Post, requestDto,
+                Creds.ToList());
+
+            var responseDto = await GetRequest(response.Result);
+            return new RequestResponse(responseDto)
+            {
+                RequestId = response.Result
+            };
+        }
+        catch (Exception e)
+        {
+            throw new Exception($"Got an error while creating a request. Exception: {e.Message}, " +
+                                $"Exception type: {e.GetType()}, StackTrace: {e.StackTrace}, InnerException: {e.InnerException?.Message}");
+        }
     }
-    
+
+    private async Task<SingleRequestDto> GetRequest(string requestId)
+    {
+        var request =
+            await Client.ExecuteWithJson<BaseResponseDto<SingleRequestDto>>($"/requests/{requestId}", Method.Get, null,
+                Creds.ToList());
+        return request.Result;
+    }
+
     private async Task<List<FileInfoDto>> UploadFiles(List<FileReference> sources, List<FileReference>? references)
     {
         var sourceZip = await CreateZipFiles(sources);
@@ -63,12 +85,12 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
                 Bytes = fileBytes.ToList(),
             }
         };
-        
-        if(references != null)
+
+        if (references != null)
         {
             var referenceZip = await CreateZipFiles(references);
             byte[] referenceBytes = await referenceZip.GetByteData();
-            
+
             byteFiles.Add(new ByteFile
             {
                 KeyName = "Reference",
@@ -103,7 +125,8 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
 
     public async Task<PaginationBaseResponseDto<RequestDto>> GetAllRequests()
     {
-        var requests = await Client.ExecuteWithJson<PaginationBaseResponseDto<RequestDto>>("/requests?$orderby=requestName",
+        var requests = await Client.ExecuteWithJson<PaginationBaseResponseDto<RequestDto>>(
+            "/requests?$orderby=requestName",
             Method.Get, null, Creds.ToList());
         return requests;
     }

@@ -1,8 +1,10 @@
 using Apps.WordsOnline.Api.Models;
 using Apps.WordsOnline.Constants;
 using Blackbird.Applications.Sdk.Common.Authentication;
+using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using RestSharp;
 
 namespace Apps.WordsOnline.Api;
@@ -40,7 +42,14 @@ public class ApiClient : RestClient
 
         if (bodyObj != null)
         {
-            request.AddJsonBody(bodyObj);
+            request.WithJsonBody(bodyObj, new()
+            {
+                ContractResolver = new DefaultContractResolver()
+                {
+                    NamingStrategy = new CamelCaseNamingStrategy()
+                },
+                NullValueHandling = NullValueHandling.Ignore
+            });        
         }
 
         return await ExecuteRequest(request);

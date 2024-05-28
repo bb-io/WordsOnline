@@ -15,10 +15,10 @@ public class ResponseBase
 }
 
 public class BaseResponseDto<T> : ResponseBase
-    where T : class, new()
+    where T : class
 {
     [JsonProperty("result")]
-    public T Result { get; set; } = new();
+    public T Result { get; set; } = null!;
 }
 
 
