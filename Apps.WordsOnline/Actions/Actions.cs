@@ -2,6 +2,7 @@ using RestSharp;
 using System.IO.Compression;
 using Apps.WordsOnline.Api.Dtos;
 using Apps.WordsOnline.Api.Models;
+using Apps.WordsOnline.Constants;
 using Apps.WordsOnline.Invocables;
 using Apps.WordsOnline.Models.Requests;
 using Apps.WordsOnline.Models.Responses;
@@ -11,6 +12,7 @@ using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
+using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 
 namespace Apps.WordsOnline.Actions;
 
@@ -41,6 +43,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             contentTypeId = request.ContentType,
             serviceLevel = request.ServiceLevel,
             description = request.Description ?? "No description provided",
+            projectId = Creds.Get(CredsNames.ProjectId).Value,
             fileList = files.Select(x => new
             {
                 guid = x.Guid,
@@ -51,7 +54,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             isAutoApprove = request.IsAutoApprove.HasValue ? request.IsAutoApprove.Value.ToString() : "True"
         };
 
-        var response = await Client.ExecuteWithJson<CreateRequestDto>("/Requests", Method.Post, requestDto,
+        var response = await Client.ExecuteWithJson<CreateRequestDto>("/requests", Method.Post, requestDto,
             Creds.ToList());
         await _logger.LogAsync(new { Message = "Request created successfully", RequestId = response.Result });
 
