@@ -1,11 +1,11 @@
 using RestSharp;
-using System.IO.Compression;
 using Apps.WordsOnline.Api.Dtos;
 using Apps.WordsOnline.Api.Models;
 using Apps.WordsOnline.Constants;
 using Apps.WordsOnline.Invocables;
 using Apps.WordsOnline.Models.Requests;
 using Apps.WordsOnline.Models.Responses;
+using Apps.WordsOnline.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Files;
@@ -26,7 +26,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
         var references = request.ReferenceFiles?.ToList();
 
         var files = await UploadFiles(sources, references);
-        
+
         var project = await GetProject(Creds.Get(CredsNames.ProjectGuid).Value);
         var requestDto = new
         {
@@ -51,35 +51,52 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             Creds.ToList());
 
         var responseDto = await GetRequest(response.Result);
-        
+
         return new RequestResponse(responseDto)
         {
             RequestId = response.Result
         };
     }
-    
+
     [Action("Download files", Description = "Downloads the files from the request")]
     public async Task<DownloadFilesResponse> DownloadFiles([ActionParameter] GetRequestRequest request,
         [ActionParameter] GetFilesRequest filesRequest)
-    {
-        if(filesRequest.Files != null && filesRequest.Files.Any())
+    {            
+        var zipArchive = new ZipArchiveHelper(fileManagementClient);
+
+        if (filesRequest.Files != null && filesRequest.Files.Any())
         {
-            throw new("No files to download");
+            var fileReferences = new List<FileReference>();
+            
+            foreach (var file in filesRequest.Files)
+            {
+                var specificFiles = await Client.Execute($"/requests/{request.RequestId}/files/{file}/download",
+                    Method.Get, null, Creds.ToList());
+                var bytes = specificFiles.RawBytes!;
+                
+                var unzippedFiles = await zipArchive.ExtractZipFiles(bytes);
+                fileReferences.AddRange(unzippedFiles);
+            }
+            
+            return new DownloadFilesResponse
+            {
+                Files = fileReferences
+            };
         }
-        
-        var allFiles = await Client.Execute($"/requests/{request.RequestId}/files", Method.Get, null, Creds.ToList());
-        var bytes = allFiles.RawBytes!;
-        
-        using var memoryStream = new MemoryStream(bytes);
-        memoryStream.Seek(0, SeekOrigin.Begin);
-        
-        var fileReference = await fileManagementClient.UploadAsync(memoryStream, MimeTypes.GetMimeType(".zip"), "files.zip");
-        return new DownloadFilesResponse
+        else
         {
-            Files = [fileReference]
-        };
+            var allFiles = await Client.Execute($"/requests/{request.RequestId}/files/download", Method.Get, null,
+                Creds.ToList());
+            var bytes = allFiles.RawBytes!;
+            var fileReferences = await zipArchive.ExtractZipFiles(bytes);
+
+            return new DownloadFilesResponse
+            {
+                Files = fileReferences
+            };
+        }
     }
-    
+
     public async Task<PaginationBaseResponseDto<RequestDto>> GetAllRequests()
     {
         var requests = await Client.ExecuteWithJson<PaginationBaseResponseDto<RequestDto>>(
@@ -98,7 +115,9 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
 
     private async Task<List<FileInfoDto>> UploadFiles(List<FileReference> sources, List<FileReference>? references)
     {
-        var sourceZip = await CreateZipFiles(sources);
+        var zipArchive = new ZipArchiveHelper(fileManagementClient);
+
+        var sourceZip = await zipArchive.CreateZipFiles(sources);
         var contentType = MimeTypes.GetMimeType(".zip");
         var byteFiles = new List<ByteFile>
         {
@@ -113,7 +132,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
 
         if (references != null)
         {
-            var referenceZip = await CreateZipFiles(references);
+            var referenceZip = await zipArchive.CreateZipFiles(references);
             byteFiles.Add(new ByteFile
             {
                 KeyName = "Reference",
@@ -128,29 +147,10 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
         return files.Result;
     }
 
-    private async Task<byte[]> CreateZipFiles(List<FileReference> fileReferences)
-    {
-        await using var memoryStream = new MemoryStream();
-        var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true);
-
-        foreach (var fileReference in fileReferences)
-        {
-            var currentFile = archive.CreateEntry(fileReference.Name);
-            await using var entryStream = currentFile.Open();
-
-            var stream = await fileManagementClient.DownloadAsync(fileReference);
-            await stream.CopyToAsync(entryStream);
-        }
-        
-        archive.Dispose();
-        memoryStream.Seek(0, SeekOrigin.Begin);
-        
-        return memoryStream.ToArray();
-    }
-    
     private async Task<ProjectDto> GetProject(string projectGuid)
     {
-        var project = await Client.ExecuteWithJson<BaseResponseDto<ProjectDto>>($"/projects/{projectGuid}", Method.Get, null,
+        var project = await Client.ExecuteWithJson<BaseResponseDto<ProjectDto>>($"/projects/{projectGuid}", Method.Get,
+            null,
             Creds.ToList());
         return project.Result;
     }
