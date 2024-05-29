@@ -59,16 +59,15 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
     }
 
     [Action("Download files", Description = "Downloads the files from the request")]
-    public async Task<DownloadFilesResponse> DownloadFiles([ActionParameter] GetRequestRequest request,
-        [ActionParameter] GetFilesRequest filesRequest)
+    public async Task<DownloadFilesResponse> DownloadFiles([ActionParameter] DownloadFilesRequest request)
     {            
         var zipArchive = new ZipArchiveHelper(fileManagementClient);
 
-        if (filesRequest.Files != null && filesRequest.Files.Any())
+        if (request.Files != null && request.Files.Any())
         {
             var fileReferences = new List<FileReference>();
             
-            foreach (var file in filesRequest.Files)
+            foreach (var file in request.Files)
             {
                 var specificFiles = await Client.Execute($"/requests/{request.RequestId}/files/{file}/download",
                     Method.Get, null, Creds.ToList());
@@ -103,6 +102,22 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             "/requests?$orderby=requestName",
             Method.Get, null, Creds.ToList());
         return requests;
+    }
+    
+    public async Task<ProjectDto> GetProject(string projectGuid)
+    {
+        var project = await Client.ExecuteWithJson<BaseResponseDto<ProjectDto>>($"/projects/{projectGuid}", Method.Get,
+            null,
+            Creds.ToList());
+        return project.Result;
+    }
+
+    public async Task<List<FileInfoDto>> GetFilesFromRequest(string requestId)
+    {
+        var files = await Client.ExecuteWithJson<BaseResponseDto<List<FileInfoDto>>>(
+            $"/requests/{requestId}/files",
+            Method.Get, null, Creds.ToList());
+        return files.Result;
     }
 
     private async Task<SingleRequestDto> GetRequest(string requestId)
@@ -145,13 +160,5 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
         var files = await Client.ExecuteWithJson<BaseResponseDto<List<FileInfoDto>>>("/files", Method.Post, null,
             Creds.ToList(), byteFiles);
         return files.Result;
-    }
-
-    private async Task<ProjectDto> GetProject(string projectGuid)
-    {
-        var project = await Client.ExecuteWithJson<BaseResponseDto<ProjectDto>>($"/projects/{projectGuid}", Method.Get,
-            null,
-            Creds.ToList());
-        return project.Result;
     }
 }
