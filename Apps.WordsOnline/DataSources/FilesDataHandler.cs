@@ -16,7 +16,7 @@ public class FilesDataHandler(InvocationContext invocationContext, [ActionParame
             throw new Exception("You should input a request id first.");
         }
         
-        var actions = new Actions.Actions(InvocationContext, null);
+        var actions = new Actions.Actions(InvocationContext, null!);
         var requestResponse = await actions.GetFilesFromRequest(request.RequestId);
 
         return requestResponse

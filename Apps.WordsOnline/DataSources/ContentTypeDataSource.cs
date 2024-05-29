@@ -10,7 +10,7 @@ public class ContentTypeDataSource(InvocationContext invocationContext) : AppInv
 {
     public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
-        var actions = new Actions.Actions(InvocationContext, null);
+        var actions = new Actions.Actions(InvocationContext, null!);
         
         string projectGuid = Creds.Get(CredsNames.ProjectGuid).Value;
         var project = await actions.GetProject(projectGuid);

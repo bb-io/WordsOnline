@@ -8,7 +8,7 @@ public class RequestDataHandler(InvocationContext invocationContext) : AppInvoca
 {
     public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
-        var actions = new Actions.Actions(InvocationContext, null);
+        var actions = new Actions.Actions(InvocationContext, null!);
         var requests = await actions.GetAllRequests();
 
         return requests.Result.List

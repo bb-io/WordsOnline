@@ -4,5 +4,5 @@ namespace Apps.WordsOnline.Models.Responses;
 
 public class DownloadFilesResponse
 {
-    public List<FileReference> Files { get; set; }
+    public List<FileReference> Files { get; set; } = new();
 }

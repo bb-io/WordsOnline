@@ -12,7 +12,7 @@ public class ServiceLevelDataSource(InvocationContext invocationContext, [Action
 {
     public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
-        var actions = new Actions.Actions(InvocationContext, null);
+        var actions = new Actions.Actions(InvocationContext, null!);
         
         string projectGuid = Creds.Get(CredsNames.ProjectGuid).Value;
         var project = await actions.GetProject(projectGuid);
