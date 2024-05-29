@@ -51,9 +51,8 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             isAutoApprove = request.IsAutoApprove.HasValue ? request.IsAutoApprove.Value.ToString() : "True"
         };
 
-        var response = await Client.ExecuteWithJson<BaseResponseDto<string>>("/requests", Method.Post, requestDto,
+        var response = await Client.ExecuteWithJson<CreateRequestDto>("/Requests", Method.Post, requestDto,
             Creds.ToList());
-        
         await _logger.LogAsync(new { Message = "Request created successfully", RequestId = response.Result });
 
         var responseDto = await GetRequest(response.Result);

@@ -18,7 +18,7 @@ public class ApiClient : RestClient
     {
         var response = await Execute(endpoint, method, body, credentials.ToList(), files);
         var result = JsonConvert.DeserializeObject<T>(response.Content!)!;
-        if (result.Status != 0)
+        if (result.Status == -1)
         {
             throw new($"Status code: {result.Status}, Code: {result.Code}, Message: {result.Message}");
         }
