@@ -35,6 +35,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             Files = files
         });
         
+        var project = await GetProject(Creds.Get(CredsNames.ProjectGuid).Value);
         var requestDto = new
         {
             requestName = request.RequestName,
@@ -43,7 +44,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             contentTypeId = request.ContentType,
             serviceLevel = request.ServiceLevel,
             description = request.Description ?? "No description provided",
-            projectId = Creds.Get(CredsNames.ProjectId).Value,
+            projectId = project.ProjectId,
             fileList = files.Select(x => new
             {
                 guid = x.Guid,
@@ -65,6 +66,14 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
         {
             RequestId = response.Result
         };
+    }
+    
+    public async Task<PaginationBaseResponseDto<RequestDto>> GetAllRequests()
+    {
+        var requests = await Client.ExecuteWithJson<PaginationBaseResponseDto<RequestDto>>(
+            "/requests?$orderby=requestName",
+            Method.Get, null, Creds.ToList());
+        return requests;
     }
 
     private async Task<SingleRequestDto> GetRequest(string requestId)
@@ -128,12 +137,11 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
         memoryStream.Seek(0, SeekOrigin.Begin);
         return memoryStream;
     }
-
-    public async Task<PaginationBaseResponseDto<RequestDto>> GetAllRequests()
+    
+    private async Task<ProjectDto> GetProject(string projectGuid)
     {
-        var requests = await Client.ExecuteWithJson<PaginationBaseResponseDto<RequestDto>>(
-            "/requests?$orderby=requestName",
-            Method.Get, null, Creds.ToList());
-        return requests;
+        var project = await Client.ExecuteWithJson<BaseResponseDto<ProjectDto>>($"/projects/{projectGuid}", Method.Get, null,
+            Creds.ToList());
+        return project.Result;
     }
 }

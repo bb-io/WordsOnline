@@ -29,7 +29,7 @@ public class ApiClient : RestClient
     public async Task<RestResponse> Execute(string endpoint, Method method, object? bodyObj,
         List<AuthenticationCredentialsProvider> creds, List<ByteFile>? files = null)
     {
-        var projectGuid = creds.Get(CredsNames.ProjectId).Value;
+        var projectGuid = creds.Get(CredsNames.ProjectGuid).Value;
         endpoint = endpoint.Replace("[projectGuid]", projectGuid);
         
         RestRequest request = new ApiRequest(new()

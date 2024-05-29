@@ -14,7 +14,7 @@ public class ConnectionDefinition : IConnectionDefinition
             Description = "Developer API key for WordsOnline API, f.e.: 123e4567-e89b-12d3-a456-426614174000",
             Sensitive = true
         },
-        new ConnectionProperty(CredsNames.ProjectId)
+        new ConnectionProperty(CredsNames.ProjectGuid)
         {
             DisplayName = "Project GUID",
             Description = "F.e.: 123e4567-e89b-12d3-a456-426614174000",
