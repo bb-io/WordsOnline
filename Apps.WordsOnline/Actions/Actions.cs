@@ -11,7 +11,6 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 
 namespace Apps.WordsOnline.Actions;
@@ -20,7 +19,6 @@ namespace Apps.WordsOnline.Actions;
 public class Actions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : AppInvocable(invocationContext)
 {
-    private Logger _logger = new();
     
     [Action("Create request", Description = "Creates a new request based on the provided files")]
     public async Task<RequestResponse> CreateRequest([ActionParameter] CreateRequestRequest request)
@@ -29,11 +27,6 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
         var references = request.ReferenceFiles?.ToList();
 
         var files = await UploadFiles(sources, references);
-        await _logger.LogAsync(new
-        {
-            Message = "Files uploaded successfully",
-            Files = files
-        });
         
         var project = await GetProject(Creds.Get(CredsNames.ProjectGuid).Value);
         var requestDto = new
@@ -57,10 +50,8 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
 
         var response = await Client.ExecuteWithJson<CreateRequestDto>("/requests", Method.Post, requestDto,
             Creds.ToList());
-        await _logger.LogAsync(new { Message = "Request created successfully", RequestId = response.Result });
 
         var responseDto = await GetRequest(response.Result);
-        await _logger.LogAsync(new { Message = "Request retrieved successfully", Request = responseDto });
         
         return new RequestResponse(responseDto)
         {
@@ -87,8 +78,6 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
     private async Task<List<FileInfoDto>> UploadFiles(List<FileReference> sources, List<FileReference>? references)
     {
         var sourceZip = await CreateZipFiles(sources);
-        byte[] fileBytes = await sourceZip.GetByteData();
-
         var contentType = MimeTypes.GetMimeType(".zip");
         var byteFiles = new List<ByteFile>
         {
@@ -97,33 +86,31 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
                 KeyName = "Source",
                 ContentType = contentType,
                 FileName = "sources.zip",
-                Bytes = fileBytes.ToList(),
+                Bytes = sourceZip.ToList(),
             }
         };
 
         if (references != null)
         {
             var referenceZip = await CreateZipFiles(references);
-            byte[] referenceBytes = await referenceZip.GetByteData();
-
             byteFiles.Add(new ByteFile
             {
                 KeyName = "Reference",
                 ContentType = contentType,
                 FileName = "references.zip",
-                Bytes = referenceBytes.ToList(),
+                Bytes = referenceZip.ToList(),
             });
         }
 
         var files = await Client.ExecuteWithJson<BaseResponseDto<List<FileInfoDto>>>("/files", Method.Post, null,
-            Creds.ToList().ToList(), byteFiles);
+            Creds.ToList(), byteFiles);
         return files.Result;
     }
 
-    private async Task<MemoryStream> CreateZipFiles(List<FileReference> fileReferences)
+    private async Task<byte[]> CreateZipFiles(List<FileReference> fileReferences)
     {
-        var memoryStream = new MemoryStream();
-        using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true);
+        await using var memoryStream = new MemoryStream();
+        var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true);
 
         foreach (var fileReference in fileReferences)
         {
@@ -133,9 +120,11 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             var stream = await fileManagementClient.DownloadAsync(fileReference);
             await stream.CopyToAsync(entryStream);
         }
-
+        
+        archive.Dispose();
         memoryStream.Seek(0, SeekOrigin.Begin);
-        return memoryStream;
+        
+        return memoryStream.ToArray();
     }
     
     private async Task<ProjectDto> GetProject(string projectGuid)
