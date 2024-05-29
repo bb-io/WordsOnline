@@ -19,7 +19,6 @@ namespace Apps.WordsOnline.Actions;
 public class Actions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : AppInvocable(invocationContext)
 {
-    
     [Action("Create request", Description = "Creates a new request based on the provided files")]
     public async Task<RequestResponse> CreateRequest([ActionParameter] CreateRequestRequest request)
     {
@@ -56,6 +55,28 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
         return new RequestResponse(responseDto)
         {
             RequestId = response.Result
+        };
+    }
+    
+    [Action("Download files", Description = "Downloads the files from the request")]
+    public async Task<DownloadFilesResponse> DownloadFiles([ActionParameter] GetRequestRequest request,
+        [ActionParameter] GetFilesRequest filesRequest)
+    {
+        if(filesRequest.Files != null && filesRequest.Files.Any())
+        {
+            throw new("No files to download");
+        }
+        
+        var allFiles = await Client.Execute($"/requests/{request.RequestId}/files", Method.Get, null, Creds.ToList());
+        var bytes = allFiles.RawBytes!;
+        
+        using var memoryStream = new MemoryStream(bytes);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        
+        var fileReference = await fileManagementClient.UploadAsync(memoryStream, MimeTypes.GetMimeType(".zip"), "files.zip");
+        return new DownloadFilesResponse
+        {
+            Files = [fileReference]
         };
     }
     
