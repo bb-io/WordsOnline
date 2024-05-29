@@ -7,7 +7,10 @@ public class Application : IApplication, ICategoryProvider
 {
     public IEnumerable<ApplicationCategory> Categories
     {
-        get => [ApplicationCategory.ArtificialIntelligence, ApplicationCategory.MachineTranslationAndMtqe, ApplicationCategory.LspPortal];
+        get => 
+        [
+            ApplicationCategory.LspPortal
+        ];
         set { }
     }
     
