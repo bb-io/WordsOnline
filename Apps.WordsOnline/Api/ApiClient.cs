@@ -1,6 +1,8 @@
 using Apps.WordsOnline.Api.Dtos;
 using Apps.WordsOnline.Api.Models;
 using Apps.WordsOnline.Constants;
+using Apps.WordsOnline.Models.Requests;
+using Apps.WordsOnline.Utils;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
@@ -84,5 +86,55 @@ public class ApiClient : RestClient
     private static Exception GetError(RestResponse response)
     {
         return new($"Status code: {response.StatusCode}, Content: {response.Content}");
+    }
+    
+    public async Task<PaginationBaseResponseDto<RequestDto>> PaginateRequests(SearchRequestsRequest request, 
+        List<AuthenticationCredentialsProvider> creds)
+    {
+        const int pageSize = 100;
+        var allRequests = new List<RequestDto>();
+        
+        var skip = 0;
+        var moreData = true;
+        while (moreData)
+        {
+            var paginatedResult = await FetchRequestsWithPagination(skip, pageSize, request, creds);
+            if (paginatedResult?.Result?.List != null && paginatedResult.Result.List.Any())
+            {
+                allRequests.AddRange(paginatedResult.Result.List);
+                skip += pageSize;
+            }
+            else
+            {
+                moreData = false;
+            }
+        }
+
+        return new PaginationBaseResponseDto<RequestDto>
+        {
+            Result = new ResultDto<RequestDto>
+            {
+                Count = allRequests.Count,
+                List = allRequests
+            },
+            Status = 1,
+            Code = "0000",
+            Message = "Success"
+        };
+    }
+    
+    private async Task<PaginationBaseResponseDto<RequestDto>> FetchRequestsWithPagination(int skip, int top, SearchRequestsRequest request,
+        List<AuthenticationCredentialsProvider> creds)
+    {
+        var endpoint = $"/requests?$orderby=requestName&$skip={skip}&$top={top}";
+        var filter = request.FilterQueryString();
+
+        if (!string.IsNullOrEmpty(filter))
+        {
+            endpoint += $"&$filter={filter}";
+        }
+        
+        var requests = await ExecuteWithJson<PaginationBaseResponseDto<RequestDto>>(endpoint, Method.Get, null, creds);
+        return requests;
     }
 }

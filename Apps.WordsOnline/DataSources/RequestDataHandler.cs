@@ -1,4 +1,5 @@
-﻿using Apps.WordsOnline.Invocables;
+﻿using Apps.WordsOnline.Api;
+using Apps.WordsOnline.Invocables;
 using Apps.WordsOnline.Models.Requests;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -9,8 +10,8 @@ public class RequestDataHandler(InvocationContext invocationContext) : AppInvoca
 {
     public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
-        var actions = new Actions.Actions(InvocationContext, null!);
-        var requests = await actions.GetAllRequests(new SearchRequestsRequest());
+        var client = new ApiClient();
+        var requests = await client.PaginateRequests(new SearchRequestsRequest(), InvocationContext.AuthenticationCredentialsProviders.ToList());
 
         return requests.Result.List
             .Where(x => string.IsNullOrEmpty(context.SearchString) || x.RequestName.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))

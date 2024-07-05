@@ -23,7 +23,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
     [Action("Search requests", Description = "Searches for requests based on the provided filters")]
     public async Task<GetRequestsResponse> SearchRequests([ActionParameter] SearchRequestsRequest request)
     {
-        var requests = await GetAllRequests(request);
+        var requests = await Client.PaginateRequests(request, Creds.ToList());
         return new GetRequestsResponse
         {
             Requests = requests.Result.List.Select(x => new RequestResponse(x)).ToList()
@@ -148,54 +148,6 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
         {
             Files = deliveredFiles
         };
-    }
-
-    public async Task<PaginationBaseResponseDto<RequestDto>> GetAllRequests(SearchRequestsRequest request)
-    {
-        const int pageSize = 100;
-        var allRequests = new List<RequestDto>();
-        int skip = 0;
-        bool moreData = true;
-
-        while (moreData)
-        {
-            var paginatedResult = await FetchRequestsWithPagination(skip, pageSize, request);
-            if (paginatedResult?.Result?.List != null && paginatedResult.Result.List.Any())
-            {
-                allRequests.AddRange(paginatedResult.Result.List);
-                skip += pageSize;
-            }
-            else
-            {
-                moreData = false;
-            }
-        }
-
-        return new PaginationBaseResponseDto<RequestDto>
-        {
-            Result = new ResultDto<RequestDto>
-            {
-                Count = allRequests.Count,
-                List = allRequests
-            },
-            Status = 1,
-            Code = "0000",
-            Message = "Success"
-        };
-    }
-    
-    private async Task<PaginationBaseResponseDto<RequestDto>> FetchRequestsWithPagination(int skip, int top, SearchRequestsRequest request)
-    {
-        var endpoint = $"/requests?$orderby=requestName&$skip={skip}&$top={top}";
-        if (!string.IsNullOrEmpty(request.Status))
-        {
-            endpoint += $"&$filter=status eq '{request.Status}'";
-        }
-        
-        var requests = await Client.ExecuteWithJson<PaginationBaseResponseDto<RequestDto>>(
-            endpoint,
-            Method.Get, null, Creds.ToList());
-        return requests;
     }
     
     public async Task<ProjectDto> GetProject(string projectGuid)
