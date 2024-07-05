@@ -3,6 +3,7 @@ using Apps.WordsOnline.Api.Dtos;
 using Apps.WordsOnline.Api.Models;
 using Apps.WordsOnline.Constants;
 using Apps.WordsOnline.Invocables;
+using Apps.WordsOnline.Models.Identifiers;
 using Apps.WordsOnline.Models.Requests;
 using Apps.WordsOnline.Models.Responses;
 using Apps.WordsOnline.Utils;
@@ -19,6 +20,23 @@ namespace Apps.WordsOnline.Actions;
 public class Actions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : AppInvocable(invocationContext)
 {
+    [Action("Search requests", Description = "Searches for requests based on the provided filters")]
+    public async Task<GetRequestsResponse> SearchRequests([ActionParameter] SearchRequestsRequest request)
+    {
+        var requests = await Client.PaginateRequests(request, Creds.ToList());
+        return new GetRequestsResponse
+        {
+            Requests = requests.Result.List.Select(x => new RequestResponse(x)).ToList()
+        };
+    }
+    
+    [Action("Get request", Description = "Gets a request based on the provided ID")]
+    public async Task<RequestResponse> GetRequest([ActionParameter] RequestIdentifier request)
+    {
+        var requestDto = await GetRequest(request.RequestId);
+        return new RequestResponse(requestDto) { RequestGuid = request.RequestId };
+    }
+    
     [Action("Create request", Description = "Creates a new request based on the provided files")]
     public async Task<RequestResponse> CreateRequest([ActionParameter] CreateRequestRequest request)
     {
@@ -57,11 +75,37 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             RequestId = response.Result
         };
     }
+    
+    [Action("Update request status", Description = "Updates the status of a request based on the provided ID")]
+    public async Task UpdateRequestStatus([ActionParameter] UpdateRequestStatusRequest request)
+    {
+        var endpoint = $"/Requests/{request.RequestId}/Actions";
+        var body = new
+        {
+            action = request.Action,
+            description = request.Description ?? "No description provided",
+        };
+
+        await Client.Execute(endpoint, Method.Post, body, Creds.ToList());
+    }
 
     [Action("Download files", Description = "Downloads the files from the request")]
     public async Task<DownloadFilesResponse> DownloadFiles([ActionParameter] DownloadFilesRequest request)
     {            
         var zipArchive = new ZipArchiveHelper(fileManagementClient);
+
+        if (request.DownloadAllFiles.HasValue && request.DownloadAllFiles.Value)
+        {
+            var allFiles = await Client.Execute($"/requests/{request.RequestId}/files/download", Method.Get, null,
+                Creds.ToList());
+            var bytes = allFiles.RawBytes!;
+            var fileReferences = await zipArchive.ExtractZipFiles(bytes);
+
+            return new DownloadFilesResponse
+            {
+                Files = fileReferences
+            };
+        }
 
         if (request.Files != null && request.Files.Any())
         {
@@ -82,26 +126,28 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
                 Files = fileReferences
             };
         }
-        else
+        
+        var allFilesMetadata = await GetFilesFromRequest(request.RequestId);
+        var deliveredFilesMetadata = allFilesMetadata.Where(f => f.Type.Equals("Delivered", StringComparison.OrdinalIgnoreCase)).ToList();
+            
+        var deliveredFiles = new List<FileReference>();
+        foreach (var fileMetadata in deliveredFilesMetadata)
         {
-            var allFiles = await Client.Execute($"/requests/{request.RequestId}/files/download", Method.Get, null,
-                Creds.ToList());
-            var bytes = allFiles.RawBytes!;
-            var fileReferences = await zipArchive.ExtractZipFiles(bytes);
+            var specificFile = await Client.Execute($"/requests/{request.RequestId}/files/{fileMetadata.Guid}/download",
+                Method.Get, null, Creds.ToList());
+            var bytes = specificFile.RawBytes;
 
-            return new DownloadFilesResponse
+            if (bytes != null)
             {
-                Files = fileReferences
-            };
+                var unzippedFiles = await zipArchive.ExtractZipFiles(bytes);
+                deliveredFiles.AddRange(unzippedFiles);
+            }
         }
-    }
 
-    public async Task<PaginationBaseResponseDto<RequestDto>> GetAllRequests()
-    {
-        var requests = await Client.ExecuteWithJson<PaginationBaseResponseDto<RequestDto>>(
-            "/requests?$orderby=requestName",
-            Method.Get, null, Creds.ToList());
-        return requests;
+        return new DownloadFilesResponse
+        {
+            Files = deliveredFiles
+        };
     }
     
     public async Task<ProjectDto> GetProject(string projectGuid)
