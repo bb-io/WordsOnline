@@ -25,6 +25,17 @@ public class ApiClient : RestClient
         
         return result;
     }
+    
+    public async Task Execute(string endpoint, Method method, object? body,
+        IEnumerable<AuthenticationCredentialsProvider> credentials, List<ByteFile>? files = null)
+    {
+        var response = await Execute(endpoint, method, body, credentials.ToList(), files);
+        var result = JsonConvert.DeserializeObject<ResponseBase>(response.Content!)!;
+        if (result.Status == -1)
+        {
+            throw new($"Status code: {result.Status}, Code: {result.Code}, Message: {result.Message}");
+        }
+    }
 
     public async Task<RestResponse> Execute(string endpoint, Method method, object? bodyObj,
         List<AuthenticationCredentialsProvider> creds, List<ByteFile>? files = null)

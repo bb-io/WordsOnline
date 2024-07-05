@@ -30,9 +30,31 @@ public class RequestResponse
         OrderDate = string.IsNullOrEmpty(dto.OrderDate) ? DateTime.MinValue : DateTime.Parse(dto.OrderDate);
         DueDate = string.IsNullOrEmpty(dto.DueDate) ? DateTime.MinValue : DateTime.Parse(dto.DueDate);
     }
+
+    public RequestResponse(RequestDto dto)
+    {
+        RequestId = dto.RequestId.ToString();
+        RequestGuid = dto.RequestGuid;
+        RequestName = dto.RequestName;
+        SourceLanguage = dto.SourceLanguageName;
+        TargetLanguages = new List<string> { dto.TargetLanguageCode };
+        ContentType = dto.ServiceLevel;
+        ServiceLevel = dto.ServiceLevel;
+        OrderId = dto.OrderId.ToString();
+        Status = dto.Status;
+        State = dto.State;
+        ProjectGuid = dto.ProjectGuid;
+        ProjectId = dto.ProjectId;
+        ClientRequestId = dto.ClientRequestId;
+        OrderDate = string.IsNullOrEmpty(dto.CreatedAt) ? DateTime.MinValue : DateTime.Parse(dto.CreatedAt);
+        DueDate = string.IsNullOrEmpty(dto.DueDate) ? DateTime.MinValue : DateTime.Parse(dto.DueDate);
+    }
     
     [Display("Request ID")]
     public string RequestId { get; set; } = string.Empty;
+    
+    [Display("Request GUID")]
+    public string RequestGuid { get; set; } = string.Empty;
     
     [Display("Request name")] 
     public string RequestName { get; set; } = string.Empty;
