@@ -42,6 +42,12 @@ Both the `API key` and the `Project GUID` you can get by asking WordsOnline supp
 - **Get quote**: Gets a quote based on the provided request ID
 - **Approve quote**: Approves a quote based on the provided request ID
 
+## Events
+
+- **On requests delivered** Triggered when requests are delivered
+
+Note that this is a polling event, so you may not see results immediately. It will depend on the interval you set, which can range from 5 minutes to 7 days.
+
 ## Feedback
 
 Do you want to use this app or do you have feedback on our implementation? Reach out to us using the [established channels](https://www.blackbird.io/) or create an issue.
