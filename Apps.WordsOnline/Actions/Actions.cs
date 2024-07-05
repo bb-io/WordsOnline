@@ -86,7 +86,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             description = request.Description ?? "No description provided",
         };
 
-        await Client.Execute(endpoint, Method.Put, body, Creds.ToList());
+        await Client.Execute(endpoint, Method.Post, body, Creds.ToList());
     }
 
     [Action("Download files", Description = "Downloads the files from the request")]
