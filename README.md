@@ -32,11 +32,14 @@ Both the `API key` and the `Project GUID` you can get by asking WordsOnline supp
 ## Actions
 
 ### Requests 
+
 - **Search requests**: Searches for requests based on the provided filters
-- **Get request**: Get request details based on the provided request ID
-- **Update request status**: Updates the status of a request based on the provided ID
-- **Create request**: Create a new translation request based on the provided parameters. Auto approving the request is optional, but by default it is set to `true`. Under the hood we receive files, then we zip them and send them to WordsOnline.
-- **Download files**: Downloads the files from the request. By default, it will download all files (in all zip files). But you can specify zip which contains the files you want to download.
+- **Get request**: Get request details based on the provided request GUID
+- **Update request status**: Updates the status of a request based on the provided GUID
+- **Create request**: Create a new translation request based on the provided parameters. Auto approving the request is optional, but by default it is set to `true`.
+- **Download files**: Downloads the files from the request. By default, it will download delivered files. But you can specify zip which contains the files you want to download.
+- **Upload files**: Uploads files to the request based on the provided request GUID
+- **Submit request**: Submits the request for translation based on the provided request GUID
 
 ### Quotes
 - **Get quote**: Gets a quote based on the provided request ID
