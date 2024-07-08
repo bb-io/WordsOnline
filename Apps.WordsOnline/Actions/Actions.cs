@@ -128,7 +128,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
         }
         
         var allFilesMetadata = await GetFilesFromRequest(request.RequestId);
-        var deliveredFilesMetadata = allFilesMetadata.Where(f => f.Type.Equals("Delivered", StringComparison.OrdinalIgnoreCase)).ToList();
+        var deliveredFilesMetadata = allFilesMetadata.Where(f => f.Type.Equals("Delivery", StringComparison.OrdinalIgnoreCase)).ToList();
             
         var deliveredFiles = new List<FileReference>();
         foreach (var fileMetadata in deliveredFilesMetadata)
