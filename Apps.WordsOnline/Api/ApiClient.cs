@@ -28,6 +28,42 @@ public class ApiClient : RestClient
         return result;
     }
     
+    public async Task<TResponse> ExecuteWithFormData<TResponse>(string endpoint, 
+        Dictionary<string, string> properties,
+        List<ByteFile>? files,
+        Method method,
+        IEnumerable<AuthenticationCredentialsProvider> credentials)
+        where TResponse : ResponseBase
+    {
+        RestRequest request = new ApiRequest(new()
+        {
+            Url = Urls.BaseUrl + endpoint,
+            Method = method
+        }, credentials.ToList());
+
+        foreach (var (key, value) in properties)
+        {
+            request.AddParameter(key, value);
+        }
+        
+        if (files != null)
+        {
+            foreach (var file in files)
+            {
+                request = request.AddFile(file.KeyName, file.Bytes.ToArray(), file.FileName, file.ContentType);
+            }
+        }
+
+        var response = await ExecuteRequest(request);
+        var result = JsonConvert.DeserializeObject<TResponse>(response.Content!)!;
+        if (result.Status == -1)
+        {
+            throw new($"Status code: {result.Status}, Code: {result.Code}, Message: {result.Message}");
+        }
+        
+        return result;
+    }
+    
     public async Task Execute(string endpoint, Method method, object? body,
         IEnumerable<AuthenticationCredentialsProvider> credentials, List<ByteFile>? files = null)
     {

@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <Product>WordsOnline</Product>
         <Description>WordsOnline offers AI-powered platform, using Neural Machine Translation technology with human expertise to provide our enterprise customers with cost-effective, fast turnaround language services at optimal quality.</Description>
-        <Version>1.0.2</Version>
+        <Version>1.0.3</Version>
         <AssemblyName>Apps.WordsOnline</AssemblyName>
         <RootNamespace>Apps.WordsOnline</RootNamespace>
         <PackageId>Apps.WordsOnline</PackageId>
