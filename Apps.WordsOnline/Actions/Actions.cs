@@ -62,7 +62,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
 
         return new RequestResponse(responseDto)
         {
-            RequestId = response.Result
+            RequestGuid = response.Result
         };
     }
 
