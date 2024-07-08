@@ -6,6 +6,6 @@ namespace Apps.WordsOnline.Models.Identifiers;
 
 public class RequestIdentifier
 {
-    [Display("Request ID"), DataSource(typeof(RequestDataHandler))]
+    [Display("Request GUID"), DataSource(typeof(RequestDataHandler))]
     public string RequestId { get; set; } = string.Empty;
 }

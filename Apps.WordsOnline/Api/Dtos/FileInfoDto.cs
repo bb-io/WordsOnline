@@ -1,10 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using Blackbird.Applications.Sdk.Common;
+using Newtonsoft.Json;
 
 namespace Apps.WordsOnline.Api.Dtos;
 
 public class FileInfoDto
 {
-    [JsonProperty("guid")]
+    [JsonProperty("guid"), Display("File GUID")]
     public string Guid { get; set; } = string.Empty;
 
     [JsonProperty("name")]

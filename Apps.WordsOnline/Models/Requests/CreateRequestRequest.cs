@@ -22,12 +22,6 @@ public class CreateRequestRequest
     [Display("Service level"), DataSource(typeof(ServiceLevelDataSource))]
     public string ServiceLevel { get; set; } = string.Empty;
 
-    [Display("Source files")]
-    public IEnumerable<FileReference> SourceFiles { get; set; } = new List<FileReference>();
-    
-    [Display("Reference files")]
-    public IEnumerable<FileReference>? ReferenceFiles { get; set; }
-
     [Display("Is auto approve", Description = "By default, the request is auto-approved")]
     public bool? IsAutoApprove { get; set; }
 

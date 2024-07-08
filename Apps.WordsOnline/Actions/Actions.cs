@@ -12,6 +12,7 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 
 namespace Apps.WordsOnline.Actions;
@@ -40,11 +41,6 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
     [Action("Create request", Description = "Creates a new request based on the provided files")]
     public async Task<RequestResponse> CreateRequest([ActionParameter] CreateRequestRequest request)
     {
-        var sources = request.SourceFiles.ToList();
-        var references = request.ReferenceFiles?.ToList();
-
-        var files = await UploadFiles(sources, references);
-
         var project = await GetProject(Creds.Get(CredsNames.ProjectGuid).Value);
         var requestDto = new
         {
@@ -55,12 +51,6 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             serviceLevel = request.ServiceLevel,
             description = request.Description ?? "No description provided",
             projectId = project.ProjectId,
-            fileList = files.Select(x => new
-            {
-                guid = x.Guid,
-                name = x.Name,
-                type = x.Type
-            }),
             clientRequestId = request.ClientRequestId ?? "Default ID",
             isAutoApprove = request.IsAutoApprove.HasValue ? request.IsAutoApprove.Value.ToString() : "True"
         };
@@ -72,8 +62,36 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
 
         return new RequestResponse(responseDto)
         {
-            RequestId = response.Result
+            RequestGuid = response.Result
         };
+    }
+
+    [Action("Upload file", Description = "Uploads file to the request based on provided Requst GUID")]
+    public async Task<UploadFileResponse> UploadFile([ActionParameter] UploadFileRequest request)
+    {
+        var files = await UploadFiles(request.RequestId, request.File, request.ReferenceFiles?.ToList());
+        return new UploadFileResponse
+        {
+            Files = files.Select(x => new FileInfoDto
+            {
+                Guid = x.Guid,
+                Name = x.Name,
+                Type = x.Type
+            }).ToList()
+        };
+    }
+    
+    [Action("Submit request", Description = "Submits the request based on the provided ID")]
+    public async Task SubmitRequest([ActionParameter] SubmitRequestRequest request)
+    {
+        var notifyFileUploaded = request.NotifyFileUploaded ?? true;
+        var endpoint = $"/Requests?notifyFileUploaded={notifyFileUploaded}";
+        var body = new
+        {
+            requestGuid = request.RequestId,
+        };
+
+        await Client.Execute(endpoint, Method.Put, body, Creds.ToList());
     }
     
     [Action("Update request status", Description = "Updates the status of a request based on the provided ID")]
@@ -174,37 +192,43 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
         return request.Result;
     }
 
-    private async Task<List<FileInfoDto>> UploadFiles(List<FileReference> sources, List<FileReference>? references)
+    private async Task<List<FileInfoDto>> UploadFiles(string requestGuid, FileReference source, List<FileReference>? references)
     {
-        var zipArchive = new ZipArchiveHelper(fileManagementClient);
-
-        var sourceZip = await zipArchive.CreateZipFiles(sources);
-        var contentType = MimeTypes.GetMimeType(".zip");
+        var sourceFile = await fileManagementClient.DownloadAsync(source);
+        var bytes = await sourceFile.GetByteData();
         var byteFiles = new List<ByteFile>
         {
             new()
             {
                 KeyName = "Source",
-                ContentType = contentType,
-                FileName = "sources.zip",
-                Bytes = sourceZip.ToList(),
+                ContentType = source.ContentType,
+                FileName = source.Name,
+                Bytes = bytes.ToList(),
             }
         };
 
         if (references != null)
         {
+            var zipArchive = new ZipArchiveHelper(fileManagementClient);
             var referenceZip = await zipArchive.CreateZipFiles(references);
             byteFiles.Add(new ByteFile
             {
                 KeyName = "Reference",
-                ContentType = contentType,
+                ContentType = "application/zip",
                 FileName = "references.zip",
                 Bytes = referenceZip.ToList(),
             });
         }
 
-        var files = await Client.ExecuteWithJson<BaseResponseDto<List<FileInfoDto>>>("/files", Method.Post, null,
-            Creds.ToList(), byteFiles);
+        var files = await Client.ExecuteWithFormData<BaseResponseDto<List<FileInfoDto>>>("/files", 
+            new Dictionary<string, string>
+            {
+                { "RequestGuid", requestGuid }
+            }, 
+            byteFiles,
+            Method.Post,
+            Creds.ToList());
+        
         return files.Result;
     }
 }
