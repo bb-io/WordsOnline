@@ -14,7 +14,7 @@ namespace Apps.WordsOnline.Actions;
 public class QuoteActions(InvocationContext invocationContext)
     : AppInvocable(invocationContext)
 {
-    [Action("Get quote", Description = "Gets a quote based on the provided ID")]
+    [Action("Get quote", Description = "Gets a quote based on the provided request ID")]
     public async Task<QuoteResponse> GetQuote([ActionParameter] RequestIdentifier request)
     {
         var endpoint = $"/Requests/{request.RequestId}/Quote";
@@ -22,7 +22,7 @@ public class QuoteActions(InvocationContext invocationContext)
         return response.Result;
     }
     
-    [Action("Approve quote", Description = "Approves a quote based on the provided ID")]
+    [Action("Approve quote", Description = "Approves a quote based on the provided request ID")]
     public async Task ApproveQuote([ActionParameter] ApproveQuoteRequest request)
     {
         var endpoint = $"/Requests/{request.RequestId}/Quote";
