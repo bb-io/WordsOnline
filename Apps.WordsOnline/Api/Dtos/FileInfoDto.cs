@@ -13,4 +13,10 @@ public class FileInfoDto
 
     [JsonProperty("type")]
     public string Type { get; set; } = string.Empty;
+
+    [JsonProperty("sourceLanguage")]
+    public string SourceLanguage { get; set; } = string.Empty;
+    
+    [JsonProperty("targetLanguage")]
+    public string TargetLanguage { get; set; } = string.Empty;
 }

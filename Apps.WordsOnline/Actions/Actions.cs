@@ -117,7 +117,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             var allFiles = await Client.Execute($"/requests/{request.RequestId}/files/download", Method.Get, null,
                 Creds.ToList());
             var bytes = allFiles.RawBytes!;
-            var fileReferences = await zipArchive.ExtractZipFiles(bytes);
+            var fileReferences = await zipArchive.ExtractZipFiles(bytes, new FileInfoDto());
 
             return new DownloadFilesResponse
             {
@@ -127,7 +127,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
 
         if (request.Files != null && request.Files.Any())
         {
-            var fileReferences = new List<FileReference>();
+            var fileReferences = new List<FileObject>();
             
             foreach (var file in request.Files)
             {
@@ -135,7 +135,9 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
                     Method.Get, null, Creds.ToList());
                 var bytes = specificFiles.RawBytes!;
                 
-                var unzippedFiles = await zipArchive.ExtractZipFiles(bytes);
+                var fileInfos = await GetFilesFromRequest(request.RequestId);
+                var fileInfo = fileInfos.FirstOrDefault(f => f.Guid == file) ?? throw new Exception($"Couldn't find file with provided GUID {file}");
+                var unzippedFiles = await zipArchive.ExtractZipFiles(bytes, fileInfo);
                 fileReferences.AddRange(unzippedFiles);
             }
             
@@ -148,7 +150,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
         var allFilesMetadata = await GetFilesFromRequest(request.RequestId);
         var deliveredFilesMetadata = allFilesMetadata.Where(f => f.Type.Equals("Delivery", StringComparison.OrdinalIgnoreCase)).ToList();
             
-        var deliveredFiles = new List<FileReference>();
+        var deliveredFiles = new List<FileObject>();
         foreach (var fileMetadata in deliveredFilesMetadata)
         {
             var specificFile = await Client.Execute($"/requests/{request.RequestId}/files/{fileMetadata.Guid}/download",
@@ -157,7 +159,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
 
             if (bytes != null)
             {
-                var unzippedFiles = await zipArchive.ExtractZipFiles(bytes);
+                var unzippedFiles = await zipArchive.ExtractZipFiles(bytes, fileMetadata);
                 deliveredFiles.AddRange(unzippedFiles);
             }
         }
