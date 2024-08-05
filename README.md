@@ -45,6 +45,10 @@ Both the `API key` and the `Project GUID` you can get by asking WordsOnline supp
 - **Get quote**: Gets a quote based on the provided request ID
 - **Approve quote**: Approves a quote based on the provided request ID
 
+## Events
+
+- **On request delivered**: Triggered when request is delivered. By default it will remove source file but you can specify to keep it. You also can filter files by the target language.
+
 ## Feedback
 
 Do you want to use this app or do you have feedback on our implementation? Reach out to us using the [established channels](https://www.blackbird.io/) or create an issue.

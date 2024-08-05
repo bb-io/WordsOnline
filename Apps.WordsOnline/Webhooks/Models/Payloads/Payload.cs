@@ -57,7 +57,7 @@ public class Payload
     [JsonProperty("projectId"), Display("Project ID")]
     public string ProjectId { get; set; } = string.Empty;
     
-    [JsonProperty("fileInfos"), Display("File infos")]
+    [JsonProperty("fileInfos"), Display("Files information")]
     public List<FileInfoDto> FileInfos { get; set; } = new();
 }
 
