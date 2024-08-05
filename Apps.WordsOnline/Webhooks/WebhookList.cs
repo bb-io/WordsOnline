@@ -23,6 +23,10 @@ public class WebhookList(InvocationContext invocationContext) : AppInvocable(inv
             {
                 payload.FileInfos = payload.FileInfos.Where(x => x.Type == "Source").ToList();
             }
+            else
+            {
+                payload.FileInfos = payload.FileInfos.Where(x => x.Type == "Delivery").ToList();
+            }
             
             if(request.TargetLanguages != null)
             {
