@@ -12,8 +12,8 @@ public class Payload
     [JsonProperty("requestName"), Display("Request name")]
     public string RequestName { get; set; } = string.Empty;
     
-    [JsonProperty("progress"), Display("Progress")]
-    public int Progress { get; set; }
+    [JsonProperty("progress"), Display("Progress"), DefinitionIgnore]
+    public double Progress { get; set; }
     
     [JsonProperty("orderId"), Display("Order ID")]
     public int OrderId { get; set; }
