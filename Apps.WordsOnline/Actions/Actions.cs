@@ -91,7 +91,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
             requestGuid = request.RequestId,
         };
 
-        await Client.Execute(endpoint, Method.Put, body, Creds.ToList());
+        await Client.ExecuteWithJson<ResponseBase>(endpoint, Method.Put, body, Creds.ToList());
     }
     
     [Action("Update request status", Description = "Updates the status of a request based on the provided ID")]
