@@ -47,9 +47,7 @@ Both the `API key` and the `Project GUID` you can get by asking WordsOnline supp
 
 ## Events
 
-- **On requests delivered** Triggered when requests are delivered
-
-Note that this is a polling event, so you may not see results immediately. It will depend on the interval you set, which can range from 5 minutes to 7 days.
+- **On request delivered**: Triggered when request is delivered. By default it will remove source file but you can specify to keep it. You also can filter files by the target language.
 
 ## Feedback
 
