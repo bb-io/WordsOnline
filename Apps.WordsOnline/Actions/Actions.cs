@@ -57,6 +57,7 @@ public class Actions(InvocationContext invocationContext, IFileManagementClient 
 
         var response = await Client.ExecuteWithJson<CreateRequestDto>("/requests", Method.Post, requestDto,
             Creds.ToList());
+        await Task.Delay(TimeSpan.FromSeconds(3));
 
         var responseDto = await GetRequest(response.Result);
 
