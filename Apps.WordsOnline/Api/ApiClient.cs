@@ -4,6 +4,7 @@ using Apps.WordsOnline.Constants;
 using Apps.WordsOnline.Models.Requests;
 using Apps.WordsOnline.Utils;
 using Blackbird.Applications.Sdk.Common.Authentication;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Newtonsoft.Json;
@@ -22,7 +23,7 @@ public class ApiClient : RestClient
         var result = JsonConvert.DeserializeObject<T>(response.Content!)!;
         if (result.Status == -1)
         {
-            throw new($"Status code: {result.Status}, Code: {result.Code}, Message: {result.Message}");
+            throw new PluginApplicationException($"Status code: {result.Status}, Code: {result.Code}, Message: {result.Message}");
         }
         
         return result;
@@ -58,7 +59,7 @@ public class ApiClient : RestClient
         var result = JsonConvert.DeserializeObject<TResponse>(response.Content!)!;
         if (result.Status == -1)
         {
-            throw new($"Status code: {result.Status}, Code: {result.Code}, Message: {result.Message}");
+            throw new PluginApplicationException($"Status code: {result.Status}, Code: {result.Code}, Message: {result.Message}");
         }
         
         return result;
@@ -71,7 +72,7 @@ public class ApiClient : RestClient
         var result = JsonConvert.DeserializeObject<ResponseBase>(response.Content!)!;
         if (result.Status == -1)
         {
-            throw new($"Status code: {result.Status}, Code: {result.Code}, Message: {result.Message}");
+            throw new PluginApplicationException($"Status code: {result.Status}, Code: {result.Code}, Message: {result.Message}");
         }
     }
 
@@ -121,7 +122,7 @@ public class ApiClient : RestClient
     
     private static Exception GetError(RestResponse response)
     {
-        return new($"Status code: {response.StatusCode}, Content: {response.Content}");
+        return new PluginApplicationException($"Status code: {response.StatusCode}, Content: {response.Content}");
     }
     
     public async Task<PaginationBaseResponseDto<RequestDto>> PaginateRequests(SearchRequestsRequest request, 
