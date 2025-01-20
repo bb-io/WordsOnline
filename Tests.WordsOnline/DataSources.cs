@@ -7,7 +7,7 @@ namespace Tests.WordsOnline
     public class DataSources : TestBase
     {
         [TestMethod]
-        public async Task DictionaryDataHandlerReturnsValues()
+        public async Task DataHandlerReturnsValues()
         {
            
         }
