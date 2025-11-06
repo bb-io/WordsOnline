@@ -17,7 +17,7 @@ using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 
 namespace Apps.WordsOnline.Actions;
 
-[ActionList]
+[ActionList("Requests")]
 public class Actions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : AppInvocable(invocationContext)
 {

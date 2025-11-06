@@ -10,7 +10,7 @@ using RestSharp;
 
 namespace Apps.WordsOnline.Actions;
 
-[ActionList]
+[ActionList("Quotes")]
 public class QuoteActions(InvocationContext invocationContext)
     : AppInvocable(invocationContext)
 {
