@@ -5,6 +5,7 @@ using Apps.WordsOnline.Webhooks.Models.Requests;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Webhooks;
 using Newtonsoft.Json;
+using System.Net;
 
 namespace Apps.WordsOnline.Webhooks;
 
@@ -18,6 +19,16 @@ public class WebhookList(InvocationContext invocationContext) : AppInvocable(inv
         try
         {
             var payload = JsonConvert.DeserializeObject<Payload>(webhookRequest.Body.ToString()!)!;
+
+            if (!string.IsNullOrWhiteSpace(request.RequestGuid) &&
+                !string.Equals(request.RequestGuid, payload.RequestGuid, StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(new WebhookResponse<Payload>
+                {
+                    HttpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK),
+                    ReceivedWebhookRequestType = WebhookRequestType.Preflight
+                });
+            }
             
             if(request.IncludeSourceFile.HasValue && request.IncludeSourceFile.Value)
             {
@@ -36,6 +47,7 @@ public class WebhookList(InvocationContext invocationContext) : AppInvocable(inv
             
             return Task.FromResult(new WebhookResponse<Payload>
             {
+                HttpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK),
                 Result = payload
             });
         }

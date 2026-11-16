@@ -47,7 +47,7 @@ Both the `API key` and the `Project GUID` you can get by asking WordsOnline supp
 
 ## Events
 
-- **On request delivered**: Triggered when request is delivered. By default it will remove source file but you can specify to keep it. You also can filter files by the target language.
+- **On request delivered**: Triggered when a request is delivered. You can optionally filter events by request GUID, include the source file, and filter files by target language.
 
 ## Feedback
 
